@@ -82,18 +82,37 @@ function startNextServer() {
 
         log(`[Main] Standalone Path: ${serverPath}`)
 
-        // Security: Pick up host env vars if present (e.g. from local .env)
-        // In prod, these would be set in the system or passed via a config file
-        const productionEnv = {
-            ...process.env,
+        // ─── Environment Variable Discovery ─────────────────────
+        const baseEnv = {
             NODE_ENV: "production",
             PORT: String(PORT),
             HOSTNAME: "localhost",
-            // Explicitly pass critical auth/db vars if they exist in host environment
-            DATABASE_URL: process.env.DATABASE_URL,
-            AUTH_SECRET: process.env.AUTH_SECRET,
-            GEMINI_API_KEY: process.env.GEMINI_API_KEY
+            ELECTRON_RUN_AS_NODE: "1", // CRITICAL: forces electron to act as node
         }
+
+        // 1. Merge currently active process env
+        let productionEnv = { ...process.env, ...baseEnv }
+
+        // 2. Try to load from local .env if it exists in standalone dir
+        const envPath = path.join(standaloneDir, ".env")
+        if (fs.existsSync(envPath)) {
+            log(`[Main] Loading custom env from ${envPath}`)
+            try {
+                const envContent = fs.readFileSync(envPath, "utf8")
+                envContent.split("\n").forEach(line => {
+                    const [key, ...valueParts] = line.split("=")
+                    if (key && valueParts.length > 0) {
+                        const value = valueParts.join("=").trim()
+                        productionEnv[key.trim()] = value.replace(/^["']|["']$/g, "")
+                    }
+                })
+            } catch (e) {
+                log(`[Main] Failed to parse .env: ${e.message}`)
+            }
+        }
+
+        log(`[Main] DATABASE_URL present: ${!!productionEnv.DATABASE_URL}`)
+        log(`[Main] AUTH_SECRET present: ${!!productionEnv.AUTH_SECRET}`)
 
         nextServer = spawn(process.execPath, [serverPath], {
             cwd: standaloneDir,
