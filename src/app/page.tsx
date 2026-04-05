@@ -1,4 +1,4 @@
-import { auth } from "@/../../auth"
+import { auth } from "@/../auth"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 
@@ -14,7 +14,7 @@ export default async function DashboardPage() {
     where: { userId: userId! },
     select: { currentWorkspaceId: true }
   })
-  const workspaceId = settings?.currentWorkspaceId
+  const workspaceId = settings?.currentWorkspaceId || undefined
 
   // 2. Fetch KPI Data
   const [activeDealsCount, totalPipeline, proposalsInProgress, winRateData, recentDeals, recentTasks] = await Promise.all([

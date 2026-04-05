@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/../../auth"
+import { auth } from "@/../auth"
 import { prisma } from "@/lib/prisma"
 import { writeFile, mkdir } from "fs/promises"
 import { join } from "path"
@@ -20,9 +20,7 @@ async function loadParsers() {
     }
 }
 
-export const config = {
-    api: { bodyParser: false },
-}
+export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
     try {

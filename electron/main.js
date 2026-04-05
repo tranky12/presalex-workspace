@@ -15,15 +15,31 @@ const NEXT_URL = `http://localhost:${PORT}`
 let mainWindow = null
 let tray = null
 let nextServer = null
+let serverStarting = false
+
+// Single Instance Lock
+const gotTheLock = app.requestSingleInstanceLock()
+if (!gotTheLock) {
+    app.quit()
+    return
+} else {
+    app.on("second-instance", () => {
+        if (mainWindow) {
+            if (mainWindow.isMinimized()) mainWindow.restore()
+            mainWindow.focus()
+            mainWindow.show()
+        }
+    })
+}
 
 // Native polling helper (replaces wait-on)
-function waitForServer(url, timeout = 60000) {
+function waitForServer(url, timeout = 30000) {
     const start = Date.now()
     return new Promise((resolve, reject) => {
         const interval = setInterval(() => {
             if (Date.now() - start > timeout) {
                 clearInterval(interval)
-                reject(new Error("Timeout waiting for server"))
+                reject(new Error("Timeout (30s) waiting for Next.js to start. Please check your network or restart."))
                 return
             }
             http.get(url, (res) => {
@@ -40,35 +56,35 @@ function waitForServer(url, timeout = 60000) {
 
 // ─── Start Next.js server ───────────────────────────────────────
 function startNextServer() {
-    if (isDev) return Promise.resolve()
+    if (isDev) return Promise.resolve() 
+    if (serverStarting) return Promise.resolve()
+    serverStarting = true
 
     return new Promise((resolve, reject) => {
-        // Resolve paths for production (handle asarUnpack)
+        // Resolve path to the standalone server outside ASAR
         const resourcesPath = process.resourcesPath
-        const isAsar = __dirname.includes("app.asar")
-        const appDir = isAsar ? path.join(resourcesPath, "app.asar.unpacked") : path.join(__dirname, "..")
+        const standaloneDir = path.join(resourcesPath, "standalone")
+        const serverPath = path.join(standaloneDir, "server.js")
 
-        // Find next bin
-        const nextBin = path.join(appDir, "node_modules", "next", "dist", "bin", "next")
+        console.log(`[Main] Standalone Path: ${serverPath}`)
 
-        console.log(`[Main] App Dir: ${appDir}`)
-        console.log(`[Main] Next Bin: ${nextBin}`)
-
-        nextServer = spawn(process.execPath, [nextBin, "start", "--port", String(PORT)], {
-            cwd: appDir,
+        nextServer = spawn(process.execPath, [serverPath], {
+            cwd: standaloneDir,
             env: {
                 ...process.env,
                 NODE_ENV: "production",
                 PORT: String(PORT),
+                HOSTNAME: "localhost"
             },
             stdio: ["ignore", "pipe", "pipe"],
         })
 
         nextServer.stdout.on("data", data => console.log("[Next.js]", data.toString().trim()))
         nextServer.stderr.on("data", data => console.error("[Next.js err]", data.toString().trim()))
+        
         nextServer.on("error", (err) => {
             console.error("[Next.js spawn error]", err)
-            reject(err)
+            reject(new Error(`Failed to spawn server.js: ${err.message}`))
         })
 
         waitForServer(NEXT_URL)

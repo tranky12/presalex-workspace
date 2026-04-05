@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/../../auth"
+import { auth } from "@/../auth"
 import { prisma } from "@/lib/prisma"
 
 // GET /api/projects?workspaceId=xxx — list all projects in workspace

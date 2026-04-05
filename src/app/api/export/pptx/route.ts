@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/../../auth"
+import { auth } from "@/../auth"
 
 // POST /api/export/pptx — generate branded PPTX from proposal data
 export async function POST(req: NextRequest) {

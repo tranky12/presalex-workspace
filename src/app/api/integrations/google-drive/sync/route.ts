@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/../../auth"
+import { auth } from "@/../auth"
 import { prisma } from "@/lib/prisma"
 import { findFolderByName, listFiles, downloadFile } from "@/lib/google-drive"
 import { parseFileBuffer } from "@/lib/parsers"

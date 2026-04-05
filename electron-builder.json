@@ -5,25 +5,26 @@
     "icon": "electron/assets/icon.png",
     "files": [
         "electron/**/*",
-        ".next/**/*",
-        "public/**/*",
-        "node_modules/**/*",
-        "package.json",
-        "next.config.ts",
-        "prisma/schema.prisma"
+        "package.json"
     ],
     "asar": true,
-    "asarUnpack": [
-        "node_modules/next/**/*",
-        "node_modules/prisma/**/*",
-        "node_modules/@prisma/client/**/*",
-        ".next/**/*",
-        "prisma/**/*"
-    ],
+    "asarUnpack": [],
     "extraResources": [
         {
-            "from": ".next",
-            "to": ".next"
+            "from": ".next/standalone",
+            "to": "standalone"
+        },
+        {
+            "from": ".next/static",
+            "to": "standalone/.next/static"
+        },
+        {
+            "from": "public",
+            "to": "standalone/public"
+        },
+        {
+            "from": "prisma/schema.prisma",
+            "to": "prisma/schema.prisma"
         }
     ],
     "mac": {

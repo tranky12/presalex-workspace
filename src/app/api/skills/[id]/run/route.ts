@@ -1,19 +1,20 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/../../auth"
+import { auth } from "@/../auth"
 import { prisma } from "@/lib/prisma"
 import { chat, PERSONA_PROMPTS, AIProvider } from "@/lib/ai-providers"
 
 export async function POST(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params
     const session = await auth()
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const { inputs } = await req.json()
 
     // Load skill
-    const skill = await prisma.skill.findUnique({ where: { id: params.id } })
+    const skill = await prisma.skill.findUnique({ where: { id: id } })
     if (!skill) return NextResponse.json({ error: "Skill not found" }, { status: 404 })
 
     // Load user settings for AI provider

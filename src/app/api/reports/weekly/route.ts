@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/../../auth"
+import { auth } from "@/../auth"
 import { prisma } from "@/lib/prisma"
 import { chat } from "@/lib/ai-providers"
 
@@ -52,9 +52,9 @@ export async function POST(req: NextRequest) {
     ])
 
     // Compute stats
-    const pipelineValue = deals.reduce((a, d) => a + d.value, 0)
-    const wonDeals = deals.filter(d => d.stage === "won")
-    const tasksDone = tasks.filter(t => t.status === "done")
+    const pipelineValue = (deals as any[]).reduce((a, d) => a + d.value, 0)
+    const wonDeals = (deals as any[]).filter(d => d.stage === "won")
+    const tasksDone = (tasks as any[]).filter(t => t.status === "done")
     const tasksTotal = tasks.length
 
     // Build data summary for AI
@@ -62,18 +62,18 @@ export async function POST(req: NextRequest) {
 WEEKLY DATA SUMMARY (${weekStart.toLocaleDateString()} → ${weekEnd.toLocaleDateString()})
 
 PIPELINE (${deals.length} deals updated this week):
-${deals.slice(0, 10).map(d => `- ${d.company}: ${d.stage} | $${(d.value / 1000).toFixed(0)}K | ${d.solution || "—"}`).join("\n")}
+${(deals as any[]).slice(0, 10).map(d => `- ${d.company}: ${d.stage} | $${(d.value / 1000).toFixed(0)}K | ${d.solution || "—"}`).join("\n")}
 Total pipeline value: $${(pipelineValue / 1000000).toFixed(2)}M
 Won this week: ${wonDeals.length} deals
 
 PROJECTS (${projects.length} active):
-${projects.map(p => `- [${p.type.toUpperCase()}] ${p.title}: ${p._count.tasks} tasks, progress ${p.progress}%`).join("\n")}
+${(projects as any[]).map(p => `- [${p.type.toUpperCase()}] ${p.title}: ${p._count.tasks} tasks, progress ${p.progress}%`).join("\n")}
 
 TASKS THIS WEEK (${tasksTotal} total, ${tasksDone.length} completed):
-${tasks.slice(0, 15).map(t => `- [${t.status}] ${t.title} → ${t.project.title} [${t.assignee?.name || "Unassigned"}]`).join("\n")}
+${(tasks as any[]).slice(0, 15).map(t => `- [${t.status}] ${t.title} → ${t.project.title} [${t.assignee?.name || "Unassigned"}]`).join("\n")}
 
 NEW KNOWLEDGE DOCS (${knowledgeDocs.length}):
-${knowledgeDocs.map(d => `- ${d.name} (${d.category || "general"})`).join("\n")}
+${(knowledgeDocs as any[]).map(d => `- ${d.name} (${d.category || "general"})`).join("\n")}
 `
 
     // Generate AI report in Vietnamese
@@ -111,7 +111,9 @@ Tone: chuyên nghiệp, súc tích, dành cho senior management. Không dài dò
     const reportContent = await chat({
         provider: "gemini",
         model: "gemini-1.5-pro",
-        messages: [{ role: "user", content: prompt }],
+        systemPrompt: "Bạn là senior partner tại Smartlog, đang viết báo cáo tuần cho BOD (Ban Giám Đốc).",
+        history: [],
+        message: prompt,
         apiKey: process.env.GEMINI_API_KEY || "",
     })
 

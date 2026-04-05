@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/../../auth"
+import { auth } from "@/../auth"
 import { prisma } from "@/lib/prisma"
 
 // PATCH /api/deals/[id]
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params
     const session = await auth()
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
@@ -11,7 +12,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     const { title, company, value, stage, industry, solution, notes, nextStep, score, meddicData } = body
 
     const deal = await prisma.deal.updateMany({
-        where: { id: params.id, ownerId: session.user.id! },
+        where: { id: id, ownerId: session.user.id! },
         data: {
             ...(title !== undefined && { title }),
             ...(company !== undefined && { company }),
@@ -30,10 +31,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 // DELETE /api/deals/[id]
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params
     const session = await auth()
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    await prisma.deal.deleteMany({ where: { id: params.id, ownerId: session.user.id! } })
+    await prisma.deal.deleteMany({ where: { id: id, ownerId: session.user.id! } })
     return NextResponse.json({ success: true })
 }

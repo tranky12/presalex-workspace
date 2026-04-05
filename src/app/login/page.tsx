@@ -1,6 +1,6 @@
-import { auth } from "@/../../auth"
+import { auth } from "@/../auth"
 import { redirect } from "next/navigation"
-import { signIn } from "@/../../auth"
+import { signIn } from "@/../auth"
 
 export default async function LoginPage() {
     const session = await auth()

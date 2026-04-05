@@ -122,7 +122,9 @@ Rules:
         const response = await chat({
             provider: "gemini",
             model: "gemini-1.5-flash",
-            messages: [{ role: "user", content: prompt }],
+            systemPrompt: "You are a Slack bot for a supply chain consulting presale team.",
+            history: [],
+            message: prompt,
             apiKey: "", // will use env var
         })
 

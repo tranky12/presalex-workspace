@@ -3,6 +3,22 @@ import Google from "next-auth/providers/google"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
 
+declare module "next-auth" {
+    interface Session {
+        user: {
+            id: string
+            role: string
+        } & DefaultSession["user"]
+        accessToken?: string
+    }
+
+    interface User {
+        role?: string
+    }
+}
+
+import { DefaultSession } from "next-auth"
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
     adapter: PrismaAdapter(prisma),
     providers: [
@@ -18,7 +34,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         async session({ session, user }) {
             if (session.user) {
                 session.user.id = user.id
-                session.user.role = (user as { role?: string }).role ?? "consultant"
+                session.user.role = (user as any).role ?? "consultant"
             }
             return session
         },

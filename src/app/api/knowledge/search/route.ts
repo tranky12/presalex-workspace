@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/../../auth"
+import { auth } from "@/../auth"
 import { prisma } from "@/lib/prisma"
 import { embed } from "@/lib/ai-providers"
 
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
             select: { geminiApiKey: true, currentWorkspaceId: true }
         })
 
-        const workspaceId = providedWorkspaceId || settings?.currentWorkspaceId
+        const workspaceId = (providedWorkspaceId || settings?.currentWorkspaceId) as string | undefined
         if (!workspaceId) {
             return NextResponse.json({ error: "Workspace ID required" }, { status: 400 })
         }
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
         })
 
         // 3. Calculate similarities
-        const results = docs.map(doc => {
+        const results = (docs as any[]).map(doc => {
             const similarity = cosineSimilarity(queryEmbedding, doc.embedding as number[])
             return {
                 id: doc.id,
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
         })
 
         // 4. Sort and filter
-        const sortedResults = results
+        const sortedResults = (results as any[])
             .filter(r => r.similarity > 0.4) // Threshold
             .sort((a, b) => b.similarity - a.similarity)
             .slice(0, 5) // Top 5

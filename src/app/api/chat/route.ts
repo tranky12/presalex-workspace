@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/../../auth"
+import { auth } from "@/../auth"
 import { chat, PERSONA_PROMPTS, AIProvider } from "@/lib/ai-providers"
 import { prisma } from "@/lib/prisma"
 

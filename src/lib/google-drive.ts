@@ -1,5 +1,5 @@
 import { google } from "googleapis"
-import { auth as nextAuth } from "@/../../auth"
+import { auth as nextAuth } from "@/../auth"
 
 export async function getGoogleDriveClient() {
     const session = await nextAuth()
