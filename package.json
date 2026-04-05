@@ -1,6 +1,6 @@
 {
   "name": "presalex-workspace",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "SC&L Expert Presale Workspace — Powered by AI",
   "main": "electron/main.js",
   "private": true,
@@ -39,7 +39,8 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-dropzone": "^15.0.0",
-    "react-markdown": "^10.1.0"
+    "react-markdown": "^10.1.0",
+    "wait-on": "^9.0.4"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -52,7 +53,6 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "wait-on": "^9.0.4"
+    "typescript": "^5"
   }
 }
