@@ -17,6 +17,20 @@ let tray = null
 let nextServer = null
 let serverStarting = false
 
+// ─── Logging Setup ─────────────────────────────────────────────
+const fs = require("fs")
+const logFile = path.join(app.getPath("userData"), "app.log")
+
+function log(msg) {
+    const timestamp = new Date().toISOString()
+    const content = `[${timestamp}] ${msg}\n`
+    console.log(msg)
+    try { fs.appendFileSync(logFile, content) } catch (e) { /* ignore */ }
+}
+
+log(`\n--- PresaleX Started (v${app.getVersion()}) ---`)
+log(`Log file: ${logFile}`)
+
 // Single Instance Lock
 const gotTheLock = app.requestSingleInstanceLock()
 if (!gotTheLock) {
@@ -66,29 +80,40 @@ function startNextServer() {
         const standaloneDir = path.join(resourcesPath, "standalone")
         const serverPath = path.join(standaloneDir, "server.js")
 
-        console.log(`[Main] Standalone Path: ${serverPath}`)
+        log(`[Main] Standalone Path: ${serverPath}`)
+
+        // Security: Pick up host env vars if present (e.g. from local .env)
+        // In prod, these would be set in the system or passed via a config file
+        const productionEnv = {
+            ...process.env,
+            NODE_ENV: "production",
+            PORT: String(PORT),
+            HOSTNAME: "localhost",
+            // Explicitly pass critical auth/db vars if they exist in host environment
+            DATABASE_URL: process.env.DATABASE_URL,
+            AUTH_SECRET: process.env.AUTH_SECRET,
+            GEMINI_API_KEY: process.env.GEMINI_API_KEY
+        }
 
         nextServer = spawn(process.execPath, [serverPath], {
             cwd: standaloneDir,
-            env: {
-                ...process.env,
-                NODE_ENV: "production",
-                PORT: String(PORT),
-                HOSTNAME: "localhost"
-            },
+            env: productionEnv,
             stdio: ["ignore", "pipe", "pipe"],
         })
 
-        nextServer.stdout.on("data", data => console.log("[Next.js]", data.toString().trim()))
-        nextServer.stderr.on("data", data => console.error("[Next.js err]", data.toString().trim()))
+        nextServer.stdout.on("data", data => log(`[Next.js] ${data.toString().trim()}`))
+        nextServer.stderr.on("data", data => log(`[Next.js err] ${data.toString().trim()}`))
         
         nextServer.on("error", (err) => {
-            console.error("[Next.js spawn error]", err)
+            log(`[Next.js spawn error] ${err.message}`)
             reject(new Error(`Failed to spawn server.js: ${err.message}`))
         })
 
         waitForServer(NEXT_URL)
-            .then(resolve)
+            .then(() => {
+                log("[Main] Next.js server is ready.")
+                resolve()
+            })
             .catch(reject)
     })
 }
@@ -242,15 +267,17 @@ function setupAutoUpdater() {
 // ─── App Events ────────────────────────────────────────────────
 app.whenReady().then(async () => {
     try {
-        console.log("Starting PresaleX...")
+        log("Initialising modules...")
         await startNextServer()
         createWindow()
         createTray()
         createMenu()
         setupAutoUpdater()
     } catch (err) {
-        console.error("Failed to start:", err)
-        dialog.showErrorBox("PresaleX Error", `Failed to start: ${err.message}`)
+        log(`CRITICAL: Failed to start: ${err.message}`)
+        dialog.showErrorBox("Startup Error", 
+            `PresaleX failed to start. This happens if the background server cannot initialize.\n\nError: ${err.message}\n\nTechnical details: See ${logFile}`
+        )
         app.quit()
     }
 })

@@ -16,7 +16,8 @@
     "electron:build": "npm run build && npx electron-builder --config electron-builder.json",
     "electron:mac": "npm run build && npx electron-builder --mac --config electron-builder.json",
     "electron:win": "npm run build && npx electron-builder --win --config electron-builder.json",
-    "electron:all": "npm run build && npx electron-builder --mac --win --config electron-builder.json"
+    "electron:all": "npm run build && npx electron-builder --mac --win --config electron-builder.json",
+    "release": "npm run build && npx electron-builder --mac --win --config electron-builder.json --publish always"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",
