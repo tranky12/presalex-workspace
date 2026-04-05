@@ -12,7 +12,7 @@ let mammoth: { extractRawText: (options: { buffer: Buffer }) => Promise<{ value:
 async function loadParsers() {
     if (!pdfParse) {
         const pdfModule = await import("pdf-parse")
-        pdfParse = pdfModule.default
+        pdfParse = (pdfModule as any).default || pdfModule
     }
     if (!mammoth) {
         const mammothModule = await import("mammoth")
@@ -100,6 +100,22 @@ export async function POST(req: NextRequest) {
         }
 
         // Save to database
+        const settings = await prisma.userSettings.findUnique({
+            where: { userId: session.user.id },
+            select: { geminiApiKey: true, currentWorkspaceId: true }
+        })
+
+        // Generate Embedding if API key is available
+        let embedding: number[] = []
+        if (settings?.geminiApiKey && content.trim().length > 10) {
+            try {
+                const { embed } = await import("@/lib/ai-providers")
+                embedding = await embed(content.substring(0, 5000), settings.geminiApiKey)
+            } catch (e) {
+                console.error("Embedding generation failed:", e)
+            }
+        }
+
         const doc = await prisma.knowledgeDoc.create({
             data: {
                 name: file.name,
@@ -110,7 +126,8 @@ export async function POST(req: NextRequest) {
                 fileSize: file.size,
                 fileUrl: `/uploads/${filename}`,
                 uploadedBy: session.user.id,
-                embedding: [], // placeholder — full vector embedding in Phase 2 with Supabase pgvector
+                workspaceId: settings?.currentWorkspaceId || formData.get("workspaceId") as string,
+                embedding,
             },
         })
 
@@ -121,7 +138,8 @@ export async function POST(req: NextRequest) {
             type: doc.type,
             category: doc.category,
             contentLength: content.length,
-            message: `✅ "${file.name}" uploaded and processed (${(file.size / 1024).toFixed(1)} KB, ${content.length.toLocaleString()} chars extracted)`,
+            hasEmbedding: embedding.length > 0,
+            message: `✅ "${file.name}" uploaded and processed (${(file.size / 1024).toFixed(1)} KB, ${content.length.toLocaleString()} chars extracted, embedding: ${embedding.length > 0 ? 'YES' : 'NO'})`,
         })
     } catch (error) {
         console.error("Upload error:", error)

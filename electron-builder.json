@@ -12,14 +12,18 @@
         "next.config.ts",
         "prisma/schema.prisma"
     ],
+    "asar": true,
+    "asarUnpack": [
+        "node_modules/next/**/*",
+        "node_modules/prisma/**/*",
+        "node_modules/@prisma/client/**/*",
+        ".next/**/*",
+        "prisma/**/*"
+    ],
     "extraResources": [
         {
             "from": ".next",
             "to": ".next"
-        },
-        {
-            "from": "public",
-            "to": "public"
         }
     ],
     "mac": {

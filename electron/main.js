@@ -1,7 +1,7 @@
 const { app, BrowserWindow, Menu, Tray, nativeImage, shell, dialog, Notification } = require("electron")
 const path = require("path")
 const { spawn } = require("child_process")
-const waitOn = require("wait-on")
+const http = require("http")
 const { autoUpdater } = require("electron-updater")
 
 // Configure auto-updater
@@ -16,13 +16,43 @@ let mainWindow = null
 let tray = null
 let nextServer = null
 
+// Native polling helper (replaces wait-on)
+function waitForServer(url, timeout = 60000) {
+    const start = Date.now()
+    return new Promise((resolve, reject) => {
+        const interval = setInterval(() => {
+            if (Date.now() - start > timeout) {
+                clearInterval(interval)
+                reject(new Error("Timeout waiting for server"))
+                return
+            }
+            http.get(url, (res) => {
+                if (res.statusCode === 200 || res.statusCode === 302 || res.statusCode === 404) {
+                    clearInterval(interval)
+                    resolve()
+                }
+            }).on("error", () => {
+                // Ignore errors during polling
+            })
+        }, 1000)
+    })
+}
+
 // ─── Start Next.js server ───────────────────────────────────────
 function startNextServer() {
-    if (isDev) return Promise.resolve() // dev mode: Next.js already running
+    if (isDev) return Promise.resolve()
 
     return new Promise((resolve, reject) => {
-        const nextBin = path.join(__dirname, "..", "node_modules", "next", "dist", "bin", "next")
-        const appDir = path.join(__dirname, "..")
+        // Resolve paths for production (handle asarUnpack)
+        const resourcesPath = process.resourcesPath
+        const isAsar = __dirname.includes("app.asar")
+        const appDir = isAsar ? path.join(resourcesPath, "app.asar.unpacked") : path.join(__dirname, "..")
+
+        // Find next bin
+        const nextBin = path.join(appDir, "node_modules", "next", "dist", "bin", "next")
+
+        console.log(`[Main] App Dir: ${appDir}`)
+        console.log(`[Main] Next Bin: ${nextBin}`)
 
         nextServer = spawn(process.execPath, [nextBin, "start", "--port", String(PORT)], {
             cwd: appDir,
@@ -34,18 +64,14 @@ function startNextServer() {
             stdio: ["ignore", "pipe", "pipe"],
         })
 
-        nextServer.stdout.on("data", data => {
-            console.log("[Next.js]", data.toString().trim())
+        nextServer.stdout.on("data", data => console.log("[Next.js]", data.toString().trim()))
+        nextServer.stderr.on("data", data => console.error("[Next.js err]", data.toString().trim()))
+        nextServer.on("error", (err) => {
+            console.error("[Next.js spawn error]", err)
+            reject(err)
         })
 
-        nextServer.stderr.on("data", data => {
-            console.error("[Next.js err]", data.toString().trim())
-        })
-
-        nextServer.on("error", reject)
-
-        // Wait for Next.js to be ready
-        waitOn({ resources: [NEXT_URL], timeout: 60000 })
+        waitForServer(NEXT_URL)
             .then(resolve)
             .catch(reject)
     })

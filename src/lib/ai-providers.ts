@@ -129,6 +129,16 @@ export async function chat(opts: ChatOptions): Promise<string> {
 }
 
 // ──────────────────────────────────────────────────────────
+// Embedding Engine (Gemini)
+// ──────────────────────────────────────────────────────────
+export async function embed(text: string, apiKey: string): Promise<number[]> {
+    const genAI = new GoogleGenerativeAI(apiKey)
+    const model = genAI.getGenerativeModel({ model: "text-embedding-004" })
+    const result = await model.embedContent(text)
+    return result.embedding.values
+}
+
+// ──────────────────────────────────────────────────────────
 // Provider Metadata (for Settings UI)
 // ──────────────────────────────────────────────────────────
 export const AI_PROVIDERS = [
